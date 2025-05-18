@@ -8,11 +8,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define UTIL_IMPL
 #include "util/util.h"
 
 typedef struct s_zombiegame {
 	SDL_Window		*window;
 	SDL_GLContext	context;
+	input_t			input;
 	bool			running;
 }	t_zombiegame;
 
@@ -37,15 +39,22 @@ int main() {
 	ASSERT(glewInit() == GLEW_OK,
 		"Failed to init GLEW");
 
+	input_init(&game.input);
+
 	game.running = true;
 	while (game.running)
 	{
 		SDL_Event ev;
 
+		input_update(&game.input, time_ns()); // TODO CHANGE TO TIME.NOW
+
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
 				case (SDL_QUIT):
 					game.running = false;
+					break;
+				default:
+					input_process(&game.input, &ev);
 					break;
 			}
 		}
@@ -56,7 +65,11 @@ int main() {
 		SDL_GL_SwapWindow(game.window);
 	}
 
+	input_destroy(&game.input);
+
 	SDL_GL_DeleteContext(game.context);
 	SDL_DestroyWindow(game.window);
 	SDL_Quit();
+
+	debug_print_alloc_stats();
 }
