@@ -13,7 +13,6 @@ static inline f64	time_s() {
 	return (TIME_NS_TO_S(time_ns()));
 }
 
-#define UTIL_IMPL
 #ifdef UTIL_IMPL
 
 static u64	_time_start, _time_freq;
