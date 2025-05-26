@@ -5,7 +5,8 @@
 
 #include "time.h"
 #include "sparseset.h"
-#include "math/vectors.h"
+#include "dynlist.h"
+#include "math.h"
 
 enum {
 	INPUT_INVALID = 0,
@@ -36,13 +37,13 @@ typedef struct input_s {
 	u64 now;
 
 	struct {
-		ivec2_t	pos;
-		ivec2_t	motion;
-		vec2_t	scroll;
+		v2i	pos;
+		v2i	motion;
+		v2	scroll;
 	}	mouse;
 
 	sparseset_t	buttons;
-	sparseset_t clear;
+	dynlist_t	clear;
 }	input_t;
 
 void	input_init(input_t *i);
@@ -74,7 +75,7 @@ void	input_init(input_t *i)
 	*i = (input_t){0};
 
 	sparseset_init(&i->buttons, sizeof(input_info_t), _INPUT_NUM_BUTTONS);
-	sparseset_init(&i->clear, sizeof(SDL_Scancode), 8); // Up to 8 keys pressed by frame by default
+	dynlist_init(&i->clear, sizeof(SDL_Scancode));
 
 	input_info_t null_info = {0};
 	for (SDL_Scancode code = 0; code < _INPUT_NUM_BUTTONS; code++) {
@@ -86,15 +87,15 @@ void	input_update(input_t *i, u64 now)
 {
 	i->now = now;
 	
-	sparseset_each(&i->clear, 
-		SDL_Scancode *code = sparseset_get(&i->clear, id);
+	dynlist_each(&i->clear, 
+		SDL_Scancode *code = vdata;
 		input_info_t *iinf = input_get(i, *code);
 		ASSERT(iinf, "Trying to get a non set button (code: %d)", *code);
 		iinf->state &= ~(INPUT_PRESSED | INPUT_RELEASED););
-	sparseset_reset(&i->clear);
+	dynlist_clear(&i->clear);
 
-	i->mouse.motion = ivec2_of();
-	i->mouse.scroll = vec2_of();
+	i->mouse.motion = v2i_of();
+	i->mouse.scroll = v2_of();
 }
 
 void	input_process(input_t *i, SDL_Event *ev)
@@ -102,14 +103,14 @@ void	input_process(input_t *i, SDL_Event *ev)
 	switch (ev->type) {
 		case (SDL_MOUSEWHEEL):
 			i->mouse.scroll = 
-				vec2_add(i->mouse.scroll,
-					vec2_of(ev->wheel.preciseX, ev->wheel.preciseY));
+				v2_add(i->mouse.scroll,
+					v2_of(ev->wheel.preciseX, ev->wheel.preciseY));
 			break;
 		case (SDL_MOUSEMOTION):
 			i->mouse.motion = 
-				ivec2_add(i->mouse.motion,
-					ivec2_of(ev->motion.xrel, ev->motion.yrel));
-			i->mouse.pos = ivec2_of(ev->motion.x, ev->motion.y);
+				v2i_add(i->mouse.motion,
+					v2i_of(ev->motion.xrel, ev->motion.yrel));
+			i->mouse.pos = v2i_of(ev->motion.x, ev->motion.y);
 			break;
 		case (SDL_MOUSEBUTTONDOWN):
 		case (SDL_MOUSEBUTTONUP):
@@ -148,8 +149,6 @@ void	input_process(input_t *i, SDL_Event *ev)
 				new_state |= INPUT_DOWN | INPUT_REPEAT;
 			}
 
-			// TODO: hack
-			// fix bug where press and release happen in same update
 			if (state & INPUT_PRESSED) {
 				new_state |= INPUT_PRESSED;
 			}
@@ -161,14 +160,14 @@ void	input_process(input_t *i, SDL_Event *ev)
 			if (down) {
 				if (!(state & INPUT_DOWN)) {
 					new_state |= INPUT_PRESSED;
-					sparseset_add(&i->clear, &code);
+					dynlist_add(&i->clear, &code);
 				}
 
 				new_state |= INPUT_DOWN;
 			} else {
 				if (state & INPUT_DOWN) {
 					new_state |= INPUT_RELEASED;
-					sparseset_add(&i->clear, &code);
+					dynlist_add(&i->clear, &code);
 				}
 			}
 
@@ -184,7 +183,7 @@ void	input_process(input_t *i, SDL_Event *ev)
 void	input_destroy(input_t *i)
 {
 	sparseset_destroy(&i->buttons);
-	sparseset_destroy(&i->clear);
+	dynlist_destroy(&i->clear);
 }
 
 #endif

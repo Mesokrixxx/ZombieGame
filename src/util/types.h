@@ -18,3 +18,7 @@ typedef double		f64;
 
 typedef ssize_t		isize;
 typedef size_t		usize;
+
+#define _type_x32_of_x8(_octet_array) \
+	(_octet_array[0] << 24 | _octet_array[1] << 16 | _octet_array[2] << 8 | _octet_array[3])
+#define type_x32_of_x8(octet_array) _type_x32_of_x8((octet_array))

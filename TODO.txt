@@ -1,0 +1,36 @@
+Explore:
+	(dynlist.h) Dynlist auto shrink
+	(gfx.h) Rid of the of precising the shader when applying uniform
+	(zombiegame.c) glViewport(0, 0, game.window_size.x, game.window_size.y);
+	(zombiegame.c) glEnable(GL_BLEND);
+	(zombiegame.c) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	(zombiegame.c) glDisable(GL_CULL_FACE);
+	(zombiegame.c) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	(zombiegame.c) glEnable(GL_DEBUG_OUTPUT);
+	(zombiegame.c) glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	(zombiegame.c) glDebugMessageCallback(gfx_glcallback, NULL);
+	(zombiegame.c) glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+
+
+Check/Research/Validate:
+	(gfx.h) GFX_BUFF_MAXCOUNT
+	(gfx.h) GFX_BUFF_MAXCOUNT
+	(gfx.h) GFX_UNIFBUF_MAXCOUNT
+	(gfx.h) GFX_BUFFTYPE_MAXCOUNT
+	(gfx.h) GFX_TEXUNI_MAXCOUNT
+	(gfx.h) Hardcoded switch case when creating buffers
+
+Implements/Complete:
+	(gfx.h) _gfx_apply_uniform()
+	(gfx.h) _gfx_render()
+	(window.h) window_create() (?)
+	(window.h) all window related things in here
+	(Makefile) MacOS compilation
+	(font.c) Colored font
+
+Fix:
+	(input.h) Press and released on the same key
+
+Change:
+	(gfx_.h) Code is horrible istg
+	

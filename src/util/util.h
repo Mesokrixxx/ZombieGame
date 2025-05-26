@@ -1,11 +1,15 @@
 #pragma once
 
-#include "math/vectors.h"
-
 #include "assert.h"
 #include "debug.h"
+#include "dynlist.h"
+#include "file.h"
+#include "gfx.h"
 #include "input.h"
 #include "macros.h"
+#include "math.h"
 #include "sparseset.h"
+#include "sprite.h"
 #include "time.h"
 #include "types.h"
+#include "window.h"

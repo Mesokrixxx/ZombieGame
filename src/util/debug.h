@@ -4,6 +4,7 @@
 
 void	*_malloc(usize size);
 void	_free(void *ptr);
+// Use _malloc if given ptr is NULL and n_size > 0
 void	*_realloc(void *ptr, usize o_size, usize n_size);
 
 void	debug_print_alloc_stats();
@@ -13,10 +14,10 @@ void	debug_print_alloc_stats();
 # include <stdlib.h>
 # include <stdio.h>
 
-i32		alloc_count = 0;
-i32		free_count = 0;
-i32		realloc_count = 0;
-usize	total_alloc_size = 0;
+i32		_alloc_count = 0;
+i32		_free_count = 0;
+i32		_realloc_count = 0;
+usize	_total_alloc_size = 0;
 
 void	*_malloc(usize size)
 {
@@ -24,8 +25,8 @@ void	*_malloc(usize size)
 
 	ptr = malloc(size);
 	if (ptr) {
-		alloc_count++;
-		total_alloc_size += size;
+		_alloc_count++;
+		_total_alloc_size += size;
 	}
 	return (ptr);
 }
@@ -36,22 +37,22 @@ void	_free(void *ptr)
 		return ;
 
 	free(ptr);
-	free_count++;
+	_free_count++;
 }
 
 void	*_realloc(void *ptr, usize o_size, usize n_size)
 {
 	void *new_ptr;
 	
-	if (!ptr)
-		return NULL;
+	if (!ptr && n_size > 0)
+		return (_malloc(n_size));
 	
 	new_ptr = realloc(ptr, n_size);
 	if (new_ptr) {
-		realloc_count++;
+		_realloc_count++;
 		usize diff = n_size - o_size;
 		if (diff > 0)
-			total_alloc_size += diff;
+			_total_alloc_size += diff;
 	}
 	return (new_ptr);
 }
@@ -67,9 +68,9 @@ void	debug_print_alloc_stats()
 		"> %zu KO\n"
 		"> %zu MO\n"
 		"----------------------------\n",
-		alloc_count, free_count, realloc_count,
-		total_alloc_size, total_alloc_size / 1024,
-		total_alloc_size / 1024 / 1024);
+		_alloc_count, _free_count, _realloc_count,
+		_total_alloc_size, _total_alloc_size / 1024,
+		_total_alloc_size / 1024 / 1024);
 }
 
 #endif

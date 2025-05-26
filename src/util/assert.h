@@ -1,16 +1,14 @@
 #pragma once
 
-#include <stdio.h>
-
 #include "macros.h"
 
 #define _ASSERTX(_c, expr, fmt, ...)										\
 	do {																	\
 		if (!(_c)) {														\
-			i64	fmt_len = strlen(fmt);										\
 			fprintf(stderr,													\
-				"ASSERTION FAILED: [%s]\n> "								\
-				fmt "\n", expr, ##__VA_ARGS__);								\
+				"%s:%d (%s) - ASSERTION FAILED - [%s]\n>>> "				\
+				fmt "\n",													\
+				__FILE__, __LINE__, __func__, expr, ##__VA_ARGS__);			\
 			exit(1);														\
 		}																	\
 	} while (0)

@@ -76,6 +76,8 @@ static inline void	sparseset_reset(sparseset_t *ss) {
 
 void	sparseset_init(sparseset_t *ss, usize data_size, i32 capacity)
 {
+	*ss = (sparseset_t){0};
+
 	if (capacity <= 0)
 		capacity = 4;
 
