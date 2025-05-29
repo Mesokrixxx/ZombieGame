@@ -124,7 +124,7 @@ int main() {
 		
 		font_str(
 			&font_batch, 
-			"Prout\nProut",
+			"Prout\n$$$2Prout",
 			v2_of(50 + cos(time_s()) * 20, 60 + sin(time_s()) * 10),
 			col_of(255), 
 			0, 0);
