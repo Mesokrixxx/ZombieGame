@@ -5,41 +5,41 @@
 
 #define DYNLIST_DEFAULT_CAP 24
 
-typedef struct dynlist_s {
+typedef struct s_dynlist {
 	void	*data;
 	usize	data_size;
 	i32		count;
 	i32		cap;
-}	dynlist_t;
+}	t_dynlist;
 
-void	_dynlist_init(dynlist_t *l, usize data_size, i32 cap);
-void	dynlist_destroy(dynlist_t *l);
-void	dynlist_add(dynlist_t *l, void *data);
+void	_dynlist_init(t_dynlist *l, usize data_size, i32 cap);
+void	dynlist_destroy(t_dynlist *l);
+void	dynlist_add(t_dynlist *l, void *data);
 
-static inline void	dynlist_clear(dynlist_t *l) {
+static inline void	dynlist_clear(t_dynlist *l) {
 	l->count = 0;	
 };
 
-static inline i32	dynlist_size(dynlist_t *l) {
+static inline i32	dynlist_size(t_dynlist *l) {
 	return (l->count);
 }
 
-static inline i32	dynlist_cap(dynlist_t *l) {
+static inline i32	dynlist_cap(t_dynlist *l) {
 	return (l->cap);
 }
 
 // return size of total stored data
-static inline usize	dynlist_datasize(dynlist_t *l) {
+static inline usize	dynlist_datasize(t_dynlist *l) {
 	return (l->count * l->data_size);
 }
 
 // Return a ptr to the dynlist data
-static inline void	*dynlist_data(dynlist_t *l) {
+static inline void	*dynlist_data(t_dynlist *l) {
 	return (l->data);
 }
 
 #define dynlist_each(dl_ptr, ...)						\
-	dynlist_t	*l = (dl_ptr);							\
+	t_dynlist	*l = (dl_ptr);							\
 	for (i32 idx = 0; idx < l->count; idx++) {			\
 		void	*vdata = l->data + idx * l->data_size;	\
 		__VA_ARGS__										\
@@ -54,23 +54,23 @@ static inline void	*dynlist_data(dynlist_t *l) {
 #include "debug.h"
 #include <unistd.h>
 
-void	_dynlist_init(dynlist_t *l, usize data_size, i32 cap)
+void	_dynlist_init(t_dynlist *l, usize data_size, i32 cap)
 {
-	*l = (dynlist_t){0};
+	*l = (t_dynlist){0};
 
 	l->cap = cap;
 	l->data_size = data_size;
 	l->data = _malloc(l->cap * l->data_size);
 }
 
-void	dynlist_destroy(dynlist_t *l)
+void	dynlist_destroy(t_dynlist *l)
 {
 	_free(l->data);
 
-	*l = (dynlist_t){0};
+	*l = (t_dynlist){0};
 }
 
-void	dynlist_add(dynlist_t *l, void *data)
+void	dynlist_add(t_dynlist *l, void *data)
 {
 	if (l->count >= l->cap) {
 		l->data = _realloc(l->data, l->cap * l->data_size, l->cap * 2 * l->data_size);

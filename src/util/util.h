@@ -3,6 +3,7 @@
 #include "assert.h"
 #include "debug.h"
 #include "dynlist.h"
+#include "ecs.h"
 #include "file.h"
 #include "gfx.h"
 #include "input.h"

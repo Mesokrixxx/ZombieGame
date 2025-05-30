@@ -73,7 +73,7 @@ enum {
 	GFX_PIPSTEP_TYPE_PERINSTANCE
 };
 
-typedef struct gfx_s {
+typedef struct s_gfx {
 	struct {
 		u32			*id;
 		u32			*bind_point;
@@ -85,12 +85,12 @@ typedef struct gfx_s {
 		struct {
 			i32	wrap_u, wrap_v;
 			i32	min_filter, max_filter;
-		}	sampler;
+		}	s_sampler;
 		struct {
 			const char *id;
 			u32			bind_point;
-		}	uniform[GFX_TEXUNI_MAXCOUNT];
-	}	texture;
+		}	s_uniform[GFX_TEXUNI_MAXCOUNT];
+	}	s_texture;
 	
 	struct {
 		u32			*id;
@@ -103,8 +103,8 @@ typedef struct gfx_s {
 			void		*data;
 			u32			usage;
 			usize		size;
-		}	uniform_buffer[GFX_UNIFBUF_MAXCOUNT];
-	}	shader;
+		}	s_uniform_buffer[GFX_UNIFBUF_MAXCOUNT];
+	}	s_shader;
 
 	struct {
 		u32		*id;
@@ -117,15 +117,15 @@ typedef struct gfx_s {
 			u32	attachment;
 			u32	*textureid;
 			i32	level;
-		}	frame;
+		}	s_frame;
 		struct {
 			u32	format;
 			v2i	size;
 			u32	*framebufferid;
 			u32	framebuffer_type;
 			u32	attachment;
-		}	render;
-	}	buffers[GFX_BUFF_MAXCOUNT];
+		}	s_render;
+	}	s_buffers[GFX_BUFF_MAXCOUNT];
 
 	struct {
 		u32		*id;
@@ -134,17 +134,17 @@ typedef struct gfx_s {
 				u32		*id;
 				usize	stride;
 				u32		step_type;
-			}	vertex_buffers[GFX_BUFF_MAXCOUNT];
-		}	buffers;
+			}	s_vertex_buffers[GFX_BUFF_MAXCOUNT];
+		}	s_buffers;
 		struct {
 			struct {
 				u32		buffer;
 				u32		format;
 				usize	offset;
 				bool	normalize;
-			}	attr[GFX_ATTR_MAXCOUNT];
-		}	attributes;
-	}	pipeline;
+			}	s_attr[GFX_ATTR_MAXCOUNT];
+		}	s_attributes;
+	}	s_pipeline;
 
 	struct {
 		u32		primitives;
@@ -152,21 +152,21 @@ typedef struct gfx_s {
 		i32		count;
 		u32		indice_type;
 		u32		indice_count;
-	}	render;
+	}	s_render;
 
 	struct {
 		const char *id;
 		u32			data_type;
 		void		*data;
-	}	uniform[GFX_UNIF_MAXCOUNT];
-}	gfx_t;
+	}	s_uniform[GFX_UNIF_MAXCOUNT];
+}	t_gfx;
 
-void	gfx_create(gfx_t *gfx);
-void	gfx_delete(gfx_t *gfx);
-void	gfx_bind(gfx_t *gfx);
-void	gfx_append(gfx_t *gfx);
-void	gfx_render(gfx_t *gfx);
-void	gfx_apply(gfx_t *gfx);
+void	gfx_create(t_gfx *gfx);
+void	gfx_delete(t_gfx *gfx);
+void	gfx_bind(t_gfx *gfx);
+void	gfx_append(t_gfx *gfx);
+void	gfx_render(t_gfx *gfx);
+void	gfx_apply(t_gfx *gfx);
 
 #ifndef APIENTRY
 #define APIENTRY
@@ -186,11 +186,11 @@ void APIENTRY gfx_glcallback(GLenum source,
 #include "debug.h"
 #include "sparseset.h"
 
-static void	_gfx_image_load(gfx_t *gfx)
+static void	_gfx_image_load(t_gfx *gfx)
 {
 	i32	req_comp;
 
-	switch (gfx->texture.texformat) {
+	switch (gfx->s_texture.texformat) {
 		case (GFX_TEXFORMAT_RGB):
 			req_comp = 3;
 			break ;
@@ -201,42 +201,42 @@ static void	_gfx_image_load(gfx_t *gfx)
 			ASSERT(false);
 	};
 
-	gfx->texture.data = 
+	gfx->s_texture.data = 
 		stbi_load(
-			gfx->texture.path, 
-			&gfx->texture.size->x, &gfx->texture.size->y, 
+			gfx->s_texture.path, 
+			&gfx->s_texture.size->x, &gfx->s_texture.size->y, 
 			NULL, req_comp);
 
-	ASSERT(gfx->texture.data,
-		"failed to load '%s'", gfx->texture.path);
+	ASSERT(gfx->s_texture.data,
+		"failed to load '%s'", gfx->s_texture.path);
 }
 
-static void	_gfx_image_release(gfx_t *gfx)
+static void	_gfx_image_release(t_gfx *gfx)
 {
-	if (!gfx->texture.data)
+	if (!gfx->s_texture.data)
 		return ;
 
-	stbi_image_free(gfx->texture.data);
+	stbi_image_free(gfx->s_texture.data);
 }
 
-static void	_gfx_texture_create(gfx_t *gfx)
+static void	_gfx_texture_create(t_gfx *gfx)
 {
 	static i32	textures_count;
 
 	ASSERT(textures_count < GFX_TEXT_MAXCOUNT,
 		"Too many textures");
 
-	if (gfx->texture.path)
+	if (gfx->s_texture.path)
 		_gfx_image_load(gfx);
 
-	glGenTextures(1, gfx->texture.id);
+	glGenTextures(1, gfx->s_texture.id);
 	glActiveTexture(GL_TEXTURE0 + textures_count);
-	glBindTexture(GL_TEXTURE_2D, *gfx->texture.id);
+	glBindTexture(GL_TEXTURE_2D, *gfx->s_texture.id);
 
 	// Sampling parameters
 	bool	mipmap_use = false;
-	// No need to check for max_filter (mipmap apply only when texture is far away)
-	switch (gfx->texture.sampler.min_filter) { 
+	// No need to check for max_filter (mipmap apply only when s_texture is far away)
+	switch (gfx->s_texture.s_sampler.min_filter) { 
 		case (GFX_SMPFILTER_LINEAR_MIPMAP_LINEAR):
 		case (GFX_SMPFILTER_LINEAR_MIPMAP_NEAREST):
 		case (GFX_SMPFILTER_NEAREST_MIPMAP_NEAREST):
@@ -244,106 +244,106 @@ static void	_gfx_texture_create(gfx_t *gfx)
 			mipmap_use = true;
 			break;
 	}
-	if (gfx->texture.sampler.wrap_u)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gfx->texture.sampler.wrap_u);
-	if (gfx->texture.sampler.wrap_v)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gfx->texture.sampler.wrap_v);
-	if (gfx->texture.sampler.min_filter)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gfx->texture.sampler.min_filter);	
-	if (gfx->texture.sampler.max_filter)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gfx->texture.sampler.max_filter);
+	if (gfx->s_texture.s_sampler.wrap_u)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gfx->s_texture.s_sampler.wrap_u);
+	if (gfx->s_texture.s_sampler.wrap_v)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gfx->s_texture.s_sampler.wrap_v);
+	if (gfx->s_texture.s_sampler.min_filter)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gfx->s_texture.s_sampler.min_filter);	
+	if (gfx->s_texture.s_sampler.max_filter)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gfx->s_texture.s_sampler.max_filter);
 
 	glTexImage2D(
 		GL_TEXTURE_2D,
 		0, 
-		gfx->texture.internalformat, 
-		gfx->texture.size->x, gfx->texture.size->y, 
+		gfx->s_texture.internalformat, 
+		gfx->s_texture.size->x, gfx->s_texture.size->y, 
 		0, 
-		gfx->texture.texformat, 
-		GL_UNSIGNED_BYTE, gfx->texture.data);
+		gfx->s_texture.texformat, 
+		GL_UNSIGNED_BYTE, gfx->s_texture.data);
 	if (mipmap_use) 
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 	_gfx_image_release(gfx);
-	*gfx->texture.bind_point = textures_count;
+	*gfx->s_texture.bind_point = textures_count;
 	textures_count++;
 }
 
-static void	_gfx_texture_destroy(gfx_t *gfx)
+static void	_gfx_texture_destroy(t_gfx *gfx)
 {
-	glDeleteTextures(1, gfx->texture.id);
+	glDeleteTextures(1, gfx->s_texture.id);
 }
 
-static void	_gfx_texture_bind(gfx_t *gfx)
+static void	_gfx_texture_bind(t_gfx *gfx)
 {
 	static u32	last_texture;	
 
-	if (last_texture != *gfx->texture.id) {
-		last_texture = *gfx->texture.id;
+	if (last_texture != *gfx->s_texture.id) {
+		last_texture = *gfx->s_texture.id;
 		glBindTexture(GL_TEXTURE_2D, last_texture);
 	}
 }
 
-static void	_gfx_buffer_create(gfx_t *gfx)
+static void	_gfx_buffer_create(t_gfx *gfx)
 {
-	for (i32 i = 0; gfx->buffers[i].id; i++)
+	for (i32 i = 0; gfx->s_buffers[i].id; i++)
 	{
 		u32	buf;
 
-		switch (gfx->buffers[i].type) {
+		switch (gfx->s_buffers[i].type) {
 			case (GFX_BUFTYPE_FRAME):
 				glGenFramebuffers(1, &buf);
-				glBindFramebuffer(gfx->buffers[i].type, buf);
+				glBindFramebuffer(gfx->s_buffers[i].type, buf);
 				glFramebufferTexture2D(
-					gfx->buffers[i].type,
-					gfx->buffers[i].frame.attachment,
+					gfx->s_buffers[i].type,
+					gfx->s_buffers[i].s_frame.attachment,
 					GL_TEXTURE_2D,
-					*gfx->buffers[i].frame.textureid,
-					gfx->buffers[i].frame.level);
+					*gfx->s_buffers[i].s_frame.textureid,
+					gfx->s_buffers[i].s_frame.level);
 				break ;
 			case (GFX_BUFTYPE_RENDER):
 				glGenRenderbuffers(1, &buf);
-				glBindRenderbuffer(gfx->buffers[i].type, buf);
+				glBindRenderbuffer(gfx->s_buffers[i].type, buf);
 				glRenderbufferStorage(
-					gfx->buffers[i].type,
-					gfx->buffers[i].render.format,
-					gfx->buffers[i].render.size.x,
-					gfx->buffers[i].render.size.y);
+					gfx->s_buffers[i].type,
+					gfx->s_buffers[i].s_render.format,
+					gfx->s_buffers[i].s_render.size.x,
+					gfx->s_buffers[i].s_render.size.y);
 				glFramebufferRenderbuffer(
-					gfx->buffers[i].render.framebuffer_type,
-					gfx->buffers[i].render.attachment,
-					gfx->buffers[i].type,
+					gfx->s_buffers[i].s_render.framebuffer_type,
+					gfx->s_buffers[i].s_render.attachment,
+					gfx->s_buffers[i].type,
 					buf);
 				break ;
 			default:
 				glGenBuffers(1, &buf);
-				glBindBuffer(gfx->buffers[i].type, buf);
+				glBindBuffer(gfx->s_buffers[i].type, buf);
 				glBufferData(
-					gfx->buffers[i].type, 
-					gfx->buffers[i].size,
-					gfx->buffers[i].data, 
-					gfx->buffers[i].usage);
+					gfx->s_buffers[i].type, 
+					gfx->s_buffers[i].size,
+					gfx->s_buffers[i].data, 
+					gfx->s_buffers[i].usage);
 				break ;
 		};
 
-		*gfx->buffers[i].id = buf;
+		*gfx->s_buffers[i].id = buf;
 	}
 }
 
-static void	_gfx_buffer_destroy(gfx_t *gfx)
+static void	_gfx_buffer_destroy(t_gfx *gfx)
 {
-	for (i32 i = 0; gfx->buffers[i].id; i++)
-		switch (gfx->buffers[i].type) {
+	for (i32 i = 0; gfx->s_buffers[i].id; i++)
+		switch (gfx->s_buffers[i].type) {
 			case (GFX_BUFTYPE_VERTEX):
 			case (GFX_BUFTYPE_INDEX):
 			case (GFX_BUFTYPE_UNIFORM):
-				glDeleteBuffers(1, gfx->buffers[i].id);
+				glDeleteBuffers(1, gfx->s_buffers[i].id);
 				break ;
 			case (GFX_BUFTYPE_FRAME):
-				glDeleteFramebuffers(1, gfx->buffers[i].id);
+				glDeleteFramebuffers(1, gfx->s_buffers[i].id);
 				break ;
 			case (GFX_BUFTYPE_RENDER):
-				glDeleteRenderbuffers(1, gfx->buffers[i].id);
+				glDeleteRenderbuffers(1, gfx->s_buffers[i].id);
 				break ;
 			default:
 				ASSERT(false);
@@ -368,9 +368,9 @@ static u32	_gfx_bufferbind_gettypeid(u32 type)
 	}
 }
 
-static void	_gfx_buffer_bind(gfx_t *gfx)
+static void	_gfx_buffer_bind(t_gfx *gfx)
 {
-	static sparseset_t	buff_ss;
+	static t_sparseset	buff_ss;
 	static i32			sparse[GFX_BUFF_MAXCOUNT];
 	static i32			dense[GFX_BUFF_MAXCOUNT];
 	static u32			data[GFX_BUFF_MAXCOUNT];
@@ -380,9 +380,9 @@ static void	_gfx_buffer_bind(gfx_t *gfx)
 			&buff_ss,
 			sizeof(u32), GFX_BUFF_MAXCOUNT,
 			sparse, dense, (void*)data, false);
-	for (i32 i = 0; gfx->buffers[i].id; i++) {
-		u32	type = gfx->buffers[i].type;
-		u32	id = *gfx->buffers[i].id;
+	for (i32 i = 0; gfx->s_buffers[i].id; i++) {
+		u32	type = gfx->s_buffers[i].type;
+		u32	id = *gfx->s_buffers[i].id;
 		u32	typeid = _gfx_bufferbind_gettypeid(type);
 		u32	*stored_id = sparseset_get(&buff_ss, typeid);
 		if (!stored_id)
@@ -406,24 +406,24 @@ static void	_gfx_buffer_bind(gfx_t *gfx)
 	}
 }
 
-static void	_gfx_buffer_append(gfx_t *gfx) {
-	for (i32 i = 0; gfx->buffers[i].id; i++) {
+static void	_gfx_buffer_append(t_gfx *gfx) {
+	for (i32 i = 0; gfx->s_buffers[i].id; i++) {
 		_gfx_buffer_bind(
-			&(gfx_t){
-				.buffers[0] = {
-					.id = gfx->buffers[i].id,
-					.type = gfx->buffers[i].type,
+			&(t_gfx){
+				.s_buffers[0] = {
+					.id = gfx->s_buffers[i].id,
+					.type = gfx->s_buffers[i].type,
 				}
 			});
 		glBufferSubData(
-			gfx->buffers[i].type, 
-			gfx->buffers[i].append_offset,
-			gfx->buffers[i].size,
-			gfx->buffers[i].data);
+			gfx->s_buffers[i].type, 
+			gfx->s_buffers[i].append_offset,
+			gfx->s_buffers[i].size,
+			gfx->s_buffers[i].data);
 	}
 }
 
-static void _gfx_shader_compile_cherror(u32 *shader, GLenum type)
+static void _gfx_shader_compile_cherror(u32 *s_shader, GLenum type)
 {
 	i32 	success;
 	char	infolog[512];
@@ -431,21 +431,21 @@ static void _gfx_shader_compile_cherror(u32 *shader, GLenum type)
 	switch (type) {
 		case(GL_VERTEX_SHADER):
 		case(GL_FRAGMENT_SHADER):
-			glGetShaderiv(*shader, GL_COMPILE_STATUS, &success);
+			glGetShaderiv(*s_shader, GL_COMPILE_STATUS, &success);
             if (!success)
-                glGetShaderInfoLog(*shader, 1024, NULL, infolog);
+                glGetShaderInfoLog(*s_shader, 1024, NULL, infolog);
 			break ;
 		case(GL_SHADER):
-			glGetProgramiv(*shader, GL_LINK_STATUS, &success);
+			glGetProgramiv(*s_shader, GL_LINK_STATUS, &success);
             if (!success)
-                glGetProgramInfoLog(*shader, 1024, NULL, infolog);
+                glGetProgramInfoLog(*s_shader, 1024, NULL, infolog);
 			break ;
 		default:
 			ASSERT(false);
 	}
 }
 
-static void	_gfx_shader_compile_sh(u32 *shader, GLenum type, const char *source)
+static void	_gfx_shader_compile_sh(u32 *s_shader, GLenum type, const char *source)
 {
 	u32	shader_temp;
 
@@ -455,19 +455,19 @@ static void	_gfx_shader_compile_sh(u32 *shader, GLenum type, const char *source)
 			shader_temp = glCreateShader(type);
 			glShaderSource(shader_temp, 1, &source, NULL);
 			glCompileShader(shader_temp);
-			*shader = shader_temp;
+			*s_shader = shader_temp;
 			break ;
 		default:
 			ASSERT(false);
 	}
 }
 
-static void	_gfx_shader_compile(gfx_t *gfx)
+static void	_gfx_shader_compile(t_gfx *gfx)
 {
 	static u32	uni_buf_count = 0;
 
-	char	*source_vert = file_get(gfx->shader.vertsource_path);
-	char	*source_frag = file_get(gfx->shader.fragsource_path);
+	char	*source_vert = file_get(gfx->s_shader.vertsource_path);
+	char	*source_frag = file_get(gfx->s_shader.fragsource_path);
 
 	u32	shader_frag, shader_vert, shader_prog;
 
@@ -488,57 +488,57 @@ static void	_gfx_shader_compile(gfx_t *gfx)
 	_free(source_frag);
 
 	glUseProgram(shader_prog);
-	*gfx->shader.id = shader_prog;
+	*gfx->s_shader.id = shader_prog;
 
-	for (u32 i = 0; gfx->shader.uniform_buffer[i].id; i++) {
+	for (u32 i = 0; gfx->s_shader.s_uniform_buffer[i].id; i++) {
 		ASSERT(uni_buf_count < GFX_UNIFBUF_MAXCOUNT,
-			"Max uniform buffer reach");
+			"Max s_uniform buffer reach");
 
 		_gfx_buffer_create(
-			&(gfx_t){
-				.buffers[0] = {
-					.id = gfx->shader.uniform_buffer[i].id,
+			&(t_gfx){
+				.s_buffers[0] = {
+					.id = gfx->s_shader.s_uniform_buffer[i].id,
 					.type = GFX_BUFTYPE_UNIFORM,
-					.size = gfx->shader.uniform_buffer[i].size,
-					.data = gfx->shader.uniform_buffer[i].data,
-					.usage = gfx->shader.uniform_buffer[i].usage,
+					.size = gfx->s_shader.s_uniform_buffer[i].size,
+					.data = gfx->s_shader.s_uniform_buffer[i].data,
+					.usage = gfx->s_shader.s_uniform_buffer[i].usage,
 				},
 			});
 		u32	uni_index = 
 			glGetUniformBlockIndex(
 				shader_prog, 
-				gfx->shader.uniform_buffer[i].uniname);
+				gfx->s_shader.s_uniform_buffer[i].uniname);
 		glUniformBlockBinding(shader_prog, uni_index, uni_buf_count);
 		glBindBufferBase(
 			GFX_BUFTYPE_UNIFORM, uni_buf_count,
-			*gfx->shader.uniform_buffer[i].id);
-		*gfx->shader.uniform_buffer[i].bind_point = uni_buf_count;
+			*gfx->s_shader.s_uniform_buffer[i].id);
+		*gfx->s_shader.s_uniform_buffer[i].bind_point = uni_buf_count;
 		uni_buf_count++;
 	}
 }
 
-static void	_gfx_shader_delete(gfx_t *gfx)
+static void	_gfx_shader_delete(t_gfx *gfx)
 {
-	glDeleteProgram(*gfx->shader.id);
-	for (u32 i = 0; gfx->shader.uniform_buffer[i].id; i++) {
-		glDeleteBuffers(1, gfx->shader.uniform_buffer[i].id);
+	glDeleteProgram(*gfx->s_shader.id);
+	for (u32 i = 0; gfx->s_shader.s_uniform_buffer[i].id; i++) {
+		glDeleteBuffers(1, gfx->s_shader.s_uniform_buffer[i].id);
 	}
 }
 
-static void	_gfx_shader_use(gfx_t *gfx)
+static void	_gfx_shader_use(t_gfx *gfx)
 {
 	static u32	last_shader;
 
-	if (last_shader != *gfx->shader.id)
+	if (last_shader != *gfx->s_shader.id)
 	{
-		glUseProgram(*gfx->shader.id);
-		last_shader = *gfx->shader.id;
+		glUseProgram(*gfx->s_shader.id);
+		last_shader = *gfx->s_shader.id;
 	}
-	if (gfx->shader.uniform_buffer[0].id)
+	if (gfx->s_shader.s_uniform_buffer[0].id)
 		_gfx_buffer_bind(
-			&(gfx_t){
-				.buffers[0] = {
-					.id = gfx->shader.uniform_buffer[0].id,
+			&(t_gfx){
+				.s_buffers[0] = {
+					.id = gfx->s_shader.s_uniform_buffer[0].id,
 					.type = GFX_BUFTYPE_UNIFORM,
 				}
 			});
@@ -580,169 +580,169 @@ static u32	_gfx_pipeline_get_attrformat(u32 format) {
 	};
 }
 
-static void	_gfx_pipeline_create(gfx_t *gfx)
+static void	_gfx_pipeline_create(t_gfx *gfx)
 {
 	u32	vao;
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-	for (u32 i = 0; gfx->pipeline.attributes.attr[i].format; i++)
+	for (u32 i = 0; gfx->s_pipeline.s_attributes.s_attr[i].format; i++)
 	{
-		u32	buffer_index = gfx->pipeline.attributes.attr[i].buffer;
+		u32	buffer_index = gfx->s_pipeline.s_attributes.s_attr[i].buffer;
 		gfx_bind(
-			&(gfx_t){
-				.buffers[0] = {
-					.id = gfx->pipeline.buffers.vertex_buffers[buffer_index].id,
+			&(t_gfx){
+				.s_buffers[0] = {
+					.id = gfx->s_pipeline.s_buffers.s_vertex_buffers[buffer_index].id,
 					.type = GFX_BUFTYPE_VERTEX,
 				},
 			});
 
 		glEnableVertexAttribArray(i);
-		u32	format = _gfx_pipeline_get_attrformat(gfx->pipeline.attributes.attr[i].format);
+		u32	format = _gfx_pipeline_get_attrformat(gfx->s_pipeline.s_attributes.s_attr[i].format);
 		switch (format) {
 			case (GL_FLOAT):
 				glVertexAttribPointer(
-					i, _gfx_pipeline_get_attrcount(gfx->pipeline.attributes.attr[i].format), 
+					i, _gfx_pipeline_get_attrcount(gfx->s_pipeline.s_attributes.s_attr[i].format), 
 					format, 
-					gfx->pipeline.attributes.attr[i].normalize, 
-					gfx->pipeline.buffers.vertex_buffers[buffer_index].stride,
-					(void*)(gfx->pipeline.attributes.attr[i].offset));
+					gfx->s_pipeline.s_attributes.s_attr[i].normalize, 
+					gfx->s_pipeline.s_buffers.s_vertex_buffers[buffer_index].stride,
+					(void*)(gfx->s_pipeline.s_attributes.s_attr[i].offset));
 				break ;
 			case (GL_INT):
 				glVertexAttribIPointer(
-					i, _gfx_pipeline_get_attrcount(gfx->pipeline.attributes.attr[i].format), 
+					i, _gfx_pipeline_get_attrcount(gfx->s_pipeline.s_attributes.s_attr[i].format), 
 					format,
-					gfx->pipeline.buffers.vertex_buffers[buffer_index].stride,
-					(void*)(gfx->pipeline.attributes.attr[i].offset));
+					gfx->s_pipeline.s_buffers.s_vertex_buffers[buffer_index].stride,
+					(void*)(gfx->s_pipeline.s_attributes.s_attr[i].offset));
 				break ;
 		}
-		glVertexAttribDivisor(i, gfx->pipeline.buffers.vertex_buffers[buffer_index].step_type);
+		glVertexAttribDivisor(i, gfx->s_pipeline.s_buffers.s_vertex_buffers[buffer_index].step_type);
 	}
 
-	*gfx->pipeline.id = vao;
+	*gfx->s_pipeline.id = vao;
 }
 
-static void	_gfx_pipeline_destroy(gfx_t *gfx)
+static void	_gfx_pipeline_destroy(t_gfx *gfx)
 {
-	glDeleteVertexArrays(1, gfx->pipeline.id);
+	glDeleteVertexArrays(1, gfx->s_pipeline.id);
 }
 
-static void	_gfx_pipeline_bind(gfx_t *gfx)
+static void	_gfx_pipeline_bind(t_gfx *gfx)
 {
 	static u32 last_pipeline;
 
-	u32 new_pip = *gfx->pipeline.id;
+	u32 new_pip = *gfx->s_pipeline.id;
 	if (last_pipeline != new_pip) {
 		glBindVertexArray(new_pip);
 		last_pipeline = new_pip;
 	}
 }
 
-void	gfx_create(gfx_t *gfx)
+void	gfx_create(t_gfx *gfx)
 {
 	i32	gl_error;
 
-	if (gfx->texture.id) {
+	if (gfx->s_texture.id) {
 		_gfx_texture_create(gfx);
 	}
 
-	if (gfx->shader.id) {
+	if (gfx->s_shader.id) {
 		ASSERT(
-			gfx->shader.fragsource_path && gfx->shader.vertsource_path,
-			"Both required path need to be valid to compile a shader");
+			gfx->s_shader.fragsource_path && gfx->s_shader.vertsource_path,
+			"Both required path need to be valid to compile a s_shader");
 		_gfx_shader_compile(gfx);
 	}
 
-	if (gfx->buffers[0].id) {
+	if (gfx->s_buffers[0].id) {
 		_gfx_buffer_create(gfx);
 	}
 
-	if (gfx->pipeline.id) {
+	if (gfx->s_pipeline.id) {
 		_gfx_pipeline_create(gfx);
 	}
 }
 
-void	gfx_delete(gfx_t *gfx)
+void	gfx_delete(t_gfx *gfx)
 {
-	if (gfx->texture.id)
+	if (gfx->s_texture.id)
 		_gfx_texture_destroy(gfx);
 
-	if (gfx->shader.id)
+	if (gfx->s_shader.id)
 		_gfx_shader_delete(gfx);
 
-	if (gfx->buffers[0].id)
+	if (gfx->s_buffers[0].id)
 		_gfx_buffer_destroy(gfx);
 
-	if (gfx->pipeline.id)
+	if (gfx->s_pipeline.id)
 		_gfx_pipeline_destroy(gfx);
 }
 
-void	gfx_bind(gfx_t *gfx)
+void	gfx_bind(t_gfx *gfx)
 {
-	if (gfx->shader.id)
+	if (gfx->s_shader.id)
 		_gfx_shader_use(gfx);
 
-	if (gfx->pipeline.id)
+	if (gfx->s_pipeline.id)
 		_gfx_pipeline_bind(gfx);
 
-	if (gfx->texture.id)
+	if (gfx->s_texture.id)
 		_gfx_texture_bind(gfx);
 
-	if (gfx->buffers[0].id)
+	if (gfx->s_buffers[0].id)
 		_gfx_buffer_bind(gfx);
 }
 
-void	gfx_append(gfx_t *gfx)
+void	gfx_append(t_gfx *gfx)
 {
-	if (gfx->buffers[0].id) {
+	if (gfx->s_buffers[0].id) {
 		_gfx_buffer_append(gfx);
 	}
 }
 
-void	gfx_render(gfx_t *gfx)
+void	gfx_render(t_gfx *gfx)
 {
-	if (!gfx->render.count || gfx->render.count < 2)
+	if (!gfx->s_render.count || gfx->s_render.count < 2)
 		glDrawElements(
-			gfx->render.primitives,
-			gfx->render.indice_count,
-			gfx->render.indice_type,
-			(void*)(gfx->render.offset));
+			gfx->s_render.primitives,
+			gfx->s_render.indice_count,
+			gfx->s_render.indice_type,
+			(void*)(gfx->s_render.offset));
 	else
 		glDrawElementsInstanced(
-			gfx->render.primitives,
-			gfx->render.indice_count,
-			gfx->render.indice_type,
-			(void*)(gfx->render.offset),
-			gfx->render.count);
+			gfx->s_render.primitives,
+			gfx->s_render.indice_count,
+			gfx->s_render.indice_type,
+			(void*)(gfx->s_render.offset),
+			gfx->s_render.count);
 }
 
-static void	_gfx_apply_texuni(gfx_t *gfx)
+static void	_gfx_apply_texuni(t_gfx *gfx)
 {
-	for (u32 i = 0; gfx->texture.uniform[i].id; i++) {
+	for (u32 i = 0; gfx->s_texture.s_uniform[i].id; i++) {
 		glUniform1i(
 			glGetUniformLocation(
-				*gfx->shader.id, 
-				gfx->texture.uniform[i].id), 
-				gfx->texture.uniform[i].bind_point);
+				*gfx->s_shader.id, 
+				gfx->s_texture.s_uniform[i].id), 
+				gfx->s_texture.s_uniform[i].bind_point);
 	}
 }
 
-static void _gfx_apply_uniform(gfx_t *gfx)
+static void _gfx_apply_uniform(t_gfx *gfx)
 {
-	for (u32 i = 0; gfx->uniform[i].id; i++) {
+	for (u32 i = 0; gfx->s_uniform[i].id; i++) {
 
 	}
 }
 
-void	gfx_apply(gfx_t *gfx)
+void	gfx_apply(t_gfx *gfx)
 {
-	if (gfx->shader.id)
+	if (gfx->s_shader.id)
 		_gfx_shader_use(gfx);
 
-	if (gfx->texture.uniform[0].id)
+	if (gfx->s_texture.s_uniform[0].id)
 		_gfx_apply_texuni(gfx);
 
-	if (gfx->uniform[0].id)
+	if (gfx->s_uniform[0].id)
 		_gfx_apply_uniform(gfx);
 }
 

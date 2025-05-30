@@ -3,7 +3,7 @@
 #include "types.h"
 #include "macros.h"
 
-typedef struct sparseset_s {
+typedef struct s_sparseset {
 	i32		*sparse;
 	i32		*dense;
 	void	*data;
@@ -13,26 +13,26 @@ typedef struct sparseset_s {
 	usize	data_size;
 	bool	auto_resize;
 	bool	initialized;
-}	sparseset_t;
+}	t_sparseset;
 
-void	_sparseset_init(sparseset_t *ss, usize data_size, i32 capacity, bool auto_resize);
-void	_sparseset_init_manual(sparseset_t *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize);
-void	_sparseset_add(sparseset_t *ss, void *data, i32 id);
-void	*_sparseset_get(sparseset_t *ss, i32 id);
-void	sparseset_remove(sparseset_t *ss, i32 id);
-void	sparseset_destroy(sparseset_t *ss);
+void	_sparseset_init(t_sparseset *ss, usize data_size, i32 capacity, bool auto_resize);
+void	_sparseset_init_manual(t_sparseset *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize);
+void	_sparseset_add(t_sparseset *ss, void *data, i32 id);
+void	*_sparseset_get(t_sparseset *ss, i32 id);
+void	sparseset_remove(t_sparseset *ss, i32 id);
+void	sparseset_destroy(t_sparseset *ss);
 
 // Return the current number of elements inside ss
-static inline i32	sparseset_size(sparseset_t *ss) {
+static inline i32	sparseset_size(t_sparseset *ss) {
 	return (ss->count);
 }
 
-static inline i32	sparseset_cap(sparseset_t *ss) {
+static inline i32	sparseset_cap(t_sparseset *ss) {
 	return (ss->capacity);
 }
 
 // Return the id of the index, does assert index out of range
-static inline i32	sparseset_id(sparseset_t *ss, i32 idx) {
+static inline i32	sparseset_id(t_sparseset *ss, i32 idx) {
 	ASSERT(idx >= 0 && idx < ss->count,
 		"Index out of range. Index: %d, limit: %d", idx, ss->count);
 	
@@ -40,23 +40,23 @@ static inline i32	sparseset_id(sparseset_t *ss, i32 idx) {
 }
 
 // Return the index of the id, does assert id out of range
-static inline i32	sparseset_index(sparseset_t *ss, i32 id) {
+static inline i32	sparseset_index(t_sparseset *ss, i32 id) {
 	ASSERT(id >= 0 && id < ss->sparse_size,
 		"ID out of range. Index: %d, limit: %d", id, ss->sparse_size);
 
 	return (ss->sparse[id]);
 }
 
-static inline bool	sparseset_contains(sparseset_t *ss, i32 id) {
+static inline bool	sparseset_contains(t_sparseset *ss, i32 id) {
 	return (id < ss->sparse_size && id >= 0 && ss->sparse[id] != -1);
 }
 
-static inline void	sparseset_reset(sparseset_t *ss) {
+static inline void	sparseset_reset(t_sparseset *ss) {
 	memset(ss->sparse, -1, ss->count * sizeof(i32));
 	ss->count = 0;
 }
 
-static inline bool	sparseset_valid(sparseset_t *ss) {
+static inline bool	sparseset_valid(t_sparseset *ss) {
 	return (ss->initialized);
 }
 
@@ -91,9 +91,9 @@ static inline bool	sparseset_valid(sparseset_t *ss) {
 
 #include "debug.h"
 
-void	_sparseset_init_manual(sparseset_t *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize)
+void	_sparseset_init_manual(t_sparseset *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize)
 {
-	*ss = (sparseset_t){0};
+	*ss = (t_sparseset){0};
 
 	ss->capacity = cap;
 	ss->sparse_size = cap;
@@ -108,9 +108,9 @@ void	_sparseset_init_manual(sparseset_t *ss, usize data_size, i32 cap, i32 *spar
 	ss->initialized = true;
 }
 
-void	_sparseset_init(sparseset_t *ss, usize data_size, i32 capacity, bool auto_resize)
+void	_sparseset_init(t_sparseset *ss, usize data_size, i32 capacity, bool auto_resize)
 {
-	*ss = (sparseset_t){0};
+	*ss = (t_sparseset){0};
 
 	if (capacity <= 0)
 		capacity = 4;
@@ -128,7 +128,7 @@ void	_sparseset_init(sparseset_t *ss, usize data_size, i32 capacity, bool auto_r
 	ss->initialized = true;
 }
 
-void	_sparseset_add(sparseset_t *ss, void *data, i32 id)
+void	_sparseset_add(t_sparseset *ss, void *data, i32 id)
 {
 	ASSERT(!sparseset_contains(ss, id), "Sparseset already contains %d", id);
 
@@ -164,14 +164,14 @@ void	_sparseset_add(sparseset_t *ss, void *data, i32 id)
 	ss->count++;
 }
 
-void	*_sparseset_get(sparseset_t *ss, i32 id)
+void	*_sparseset_get(t_sparseset *ss, i32 id)
 {
 	if (sparseset_contains(ss, id))
 		return ((char*)ss->data + ss->sparse[id] * ss->data_size);
 	return (NULL);
 }
 
-void	sparseset_remove(sparseset_t *ss, i32 id)
+void	sparseset_remove(t_sparseset *ss, i32 id)
 {
 	ASSERT(sparseset_contains(ss, id), "Sparseset doesn't contain id: %d", id);
 
@@ -194,13 +194,13 @@ void	sparseset_remove(sparseset_t *ss, i32 id)
 	ss->count--;
 }
 
-void	sparseset_destroy(sparseset_t *ss)
+void	sparseset_destroy(t_sparseset *ss)
 {
 	_free(ss->dense);
 	_free(ss->sparse);
 	_free(ss->data);
 
-	*ss = (sparseset_t){0};
+	*ss = (t_sparseset){0};
 }
 
 #endif

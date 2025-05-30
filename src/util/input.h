@@ -28,89 +28,89 @@ enum {
 	_INPUT_MOUSE,
 };
 
-typedef struct input_info_s {
+typedef struct s_input_info {
 	i8	state;
 	u64	last; // Last interaction with button
-}	input_info_t;
+}	t_input_info;
 
-typedef struct input_s {
+typedef struct s_input {
 	u64 now;
 
 	struct {
 		v2i	pos;
 		v2i	motion;
 		v2	scroll;
-	}	mouse;
+	}	s_mouse;
 
-	sparseset_t	buttons;
-	dynlist_t	clear;
-}	input_t;
+	t_sparseset	buttons;
+	t_dynlist	clear;
+}	t_input;
 
-void	input_init(input_t *i);
-void	input_update(input_t *i, u64 now);
-void	input_process(input_t *i, SDL_Event *ev);
-void	input_destroy(input_t *i);
+void	input_init(t_input *i);
+void	input_update(t_input *i, u64 now);
+void	input_process(t_input *i, SDL_Event *ev);
+void	input_destroy(t_input *i);
 
-static inline input_info_t *input_get(input_t *i, SDL_Scancode c) {
+static inline t_input_info *input_get(t_input *i, SDL_Scancode c) {
 	return (sparseset_get(&i->buttons, c));
 }
 
-static inline i8	input_state(input_t *i, SDL_Scancode c) {
+static inline i8	input_state(t_input *i, SDL_Scancode c) {
 	return (input_get(i, c)->state);
 }
 
 // get last interaction with button c
-static inline u64	input_since(input_t *i, SDL_Scancode c) {
+static inline u64	input_since(t_input *i, SDL_Scancode c) {
 	return (input_get(i, c)->last);
 }
 
-static inline f64	input_since_second(input_t *i, SDL_Scancode c) {
+static inline f64	input_since_second(t_input *i, SDL_Scancode c) {
 	return (TIME_NS_TO_S(input_since(i, c)));
 }
 
 #ifdef UTIL_IMPL
 
-void	input_init(input_t *i)
+void	input_init(t_input *i)
 {
-	*i = (input_t){0};
+	*i = (t_input){0};
 
-	sparseset_init(&i->buttons, sizeof(input_info_t), _INPUT_NUM_BUTTONS);
+	sparseset_init(&i->buttons, sizeof(t_input_info), _INPUT_NUM_BUTTONS);
 	dynlist_init(&i->clear, sizeof(SDL_Scancode));
 
-	input_info_t null_info = {0};
+	t_input_info null_info = {0};
 	for (SDL_Scancode code = 0; code < _INPUT_NUM_BUTTONS; code++) {
 		sparseset_add(&i->buttons, &null_info, code);
 	}
 }
 
-void	input_update(input_t *i, u64 now)
+void	input_update(t_input *i, u64 now)
 {
 	i->now = now;
 	
 	dynlist_each(&i->clear, 
 		SDL_Scancode *code = vdata;
-		input_info_t *iinf = input_get(i, *code);
+		t_input_info *iinf = input_get(i, *code);
 		ASSERT(iinf, "Trying to get a non set button (code: %d)", *code);
 		iinf->state &= ~(INPUT_PRESSED | INPUT_RELEASED););
 	dynlist_clear(&i->clear);
 
-	i->mouse.motion = v2i_of();
-	i->mouse.scroll = v2_of();
+	i->s_mouse.motion = v2i_of();
+	i->s_mouse.scroll = v2_of();
 }
 
-void	input_process(input_t *i, SDL_Event *ev)
+void	input_process(t_input *i, SDL_Event *ev)
 {
 	switch (ev->type) {
 		case (SDL_MOUSEWHEEL):
-			i->mouse.scroll = 
-				v2_add(i->mouse.scroll,
+			i->s_mouse.scroll = 
+				v2_add(i->s_mouse.scroll,
 					v2_of(ev->wheel.preciseX, ev->wheel.preciseY));
 			break;
 		case (SDL_MOUSEMOTION):
-			i->mouse.motion = 
-				v2i_add(i->mouse.motion,
+			i->s_mouse.motion = 
+				v2i_add(i->s_mouse.motion,
 					v2i_of(ev->motion.xrel, ev->motion.yrel));
-			i->mouse.pos = v2i_of(ev->motion.x, ev->motion.y);
+			i->s_mouse.pos = v2i_of(ev->motion.x, ev->motion.y);
 			break;
 		case (SDL_MOUSEBUTTONDOWN):
 		case (SDL_MOUSEBUTTONUP):
@@ -132,7 +132,7 @@ void	input_process(input_t *i, SDL_Event *ev)
 
 			u64 last = input_since(i, code);
 			i8 state = input_state(i, code);
-			input_info_t *iinf = input_get(i, code);
+			t_input_info *iinf = input_get(i, code);
 
 			if (last == i->now && repeat) {
 				// reject repeat on same update as press
@@ -180,7 +180,7 @@ void	input_process(input_t *i, SDL_Event *ev)
 	}
 }
 
-void	input_destroy(input_t *i)
+void	input_destroy(t_input *i)
 {
 	sparseset_destroy(&i->buttons);
 	dynlist_destroy(&i->clear);

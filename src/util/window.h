@@ -10,24 +10,24 @@
 #define WINDOW_BUF_COLOR GL_COLOR_BUFFER_BIT
 #define WINDOW_BUF_DEPTH GL_DEPTH_BUFFER_BIT
 
-typedef struct window_s {
+typedef struct s_window {
 	v2i	window_size, resolution;
-	u32	buffers;
+	u32	s_buffers;
 
 	u32	fbo, rbo;
 	u32	tex, tex_bp;
 	u32	shdr, ufo, ufo_bp;
 	u32	vbuf, ibuf;
-	u32	pipeline;
-}	window_t;
+	u32	s_pipeline;
+}	t_window;
 
-void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers);
+void	window_init(t_window *w, v2i window_size, v2i resolution, u32 s_buffers);
 // Must be called before window_commit
-// Bg col is only valid if WINDOW_BUF_COLOR is in w buffers
-void	window_update(window_t *w, col bg_col);
+// Bg col is only valid if WINDOW_BUF_COLOR is in w s_buffers
+void	window_update(t_window *w, col bg_col);
 // Must be called after window_update
-void	window_commit(window_t *w, col window_bg_col);
-void	window_destroy(window_t *w);
+void	window_commit(t_window *w, col window_bg_col);
+void	window_destroy(t_window *w);
 
 #ifdef UTIL_IMPL
 
@@ -51,8 +51,8 @@ static void	_window_set_viewport(u32 viewport, v2i size)
 
 	if (last_viewport != viewport) {
 		gfx_bind(
-			&(gfx_t){
-				.buffers[0] = { 
+			&(t_gfx){
+				.s_buffers[0] = { 
 					.id = &viewport, 
 					.type = GFX_BUFTYPE_FRAME 
 				},
@@ -62,12 +62,12 @@ static void	_window_set_viewport(u32 viewport, v2i size)
 	}
 }
 
-void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers)
+void	window_init(t_window *w, v2i window_size, v2i resolution, u32 s_buffers)
 {
-	*w = (window_t){
+	*w = (t_window){
 		.window_size = window_size,
 		.resolution = resolution,
-		.buffers = buffers,
+		.s_buffers = s_buffers,
 	};
 
 	_window_vertex vertices[] = {
@@ -83,47 +83,47 @@ void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers)
 	};
 
 	gfx_create(
-		&(gfx_t){
-			.texture = {
+		&(t_gfx){
+			.s_texture = {
 				.id = &w->tex,
 				.bind_point = &w->tex_bp,
 				.size = &w->resolution,
 				.internalformat = GFX_TEXINTERNFORMAT_RGBA8,
 				.texformat = GFX_TEXFORMAT_RGBA,
-				.sampler = {
+				.s_sampler = {
 					.min_filter = GFX_SMPFILTER_NEAREST,
 					.max_filter = GFX_SMPFILTER_NEAREST,
 					.wrap_u = GFX_SMPWRAP_CLAMP_TO_EDGE,
 					.wrap_v = GFX_SMPWRAP_CLAMP_TO_EDGE,
 				}
 			},
-			.buffers[0] = {
+			.s_buffers[0] = {
 				.id = &w->fbo,
 				.type = GFX_BUFTYPE_FRAME,
-				.frame = {
+				.s_frame = {
 					.textureid = &w->tex,
 					.attachment = GFX_FRAMEATTAHC_COLOR0,
 				}
 			},
-			.buffers[1] = {
+			.s_buffers[1] = {
 				.id = &w->vbuf,
 				.type = GFX_BUFTYPE_VERTEX,
 				.usage = GFX_BUFUSAGE_STATIC_DRAW,
 				.data = vertices,
 				.size = sizeof(vertices),
 			},
-			.buffers[2] = {
+			.s_buffers[2] = {
 				.id = &w->ibuf,
 				.type = GFX_BUFTYPE_INDEX,
 				.usage = GFX_BUFUSAGE_STATIC_DRAW,
 				.data = indices,
 				.size = sizeof(indices),
 			},
-			.shader = {
+			.s_shader = {
 				.id = &w->shdr,
 				.vertsource_path = _WINDOW_SDR_VERTSOURCE_PATH,
 				.fragsource_path = _WINDOW_SDR_FRAGSOURCE_PATH,
-				.uniform_buffer[0] = {
+				.s_uniform_buffer[0] = {
 					.id = &w->ufo,
 					.bind_point = &w->ufo_bp,
 					.uniname = "vs_params",
@@ -131,21 +131,21 @@ void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers)
 					.usage = GFX_BUFUSAGE_DYNAMIC_DRAW,
 				}
 			},
-			.pipeline = {
-				.id = &w->pipeline,
-				.buffers = {
-					.vertex_buffers[0] = {
+			.s_pipeline = {
+				.id = &w->s_pipeline,
+				.s_buffers = {
+					.s_vertex_buffers[0] = {
 						.id = &w->vbuf,
 						.stride = sizeof(_window_vertex),
 					}
 				},
-				.attributes = {
-					.attr[0] = {
+				.s_attributes = {
+					.s_attr[0] = {
 						.buffer = 0,
 						.format = GFX_ATTBFORMAT_FLOAT2,
 						.offset = offsetof(_window_vertex, pos),
 					},
-					.attr[1] = {
+					.s_attr[1] = {
 						.buffer = 0,
 						.format = GFX_ATTBFORMAT_FLOAT2,
 						.offset = offsetof(_window_vertex, uv),
@@ -154,24 +154,24 @@ void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers)
 			},
 		});
 	gfx_apply(
-		&(gfx_t){
-			.shader = {
+		&(t_gfx){
+			.s_shader = {
 				.id = &w->shdr,
 			},
-			.texture = {
-				.uniform[0] = {
+			.s_texture = {
+				.s_uniform[0] = {
 					.bind_point = w->tex_bp,
 					.id = "tex",
 				}	
 			}
 		});
-	if (w->buffers & WINDOW_BUF_DEPTH)
+	if (w->s_buffers & WINDOW_BUF_DEPTH)
 		gfx_create(
-			&(gfx_t){
-				.buffers[0] = {
+			&(t_gfx){
+				.s_buffers[0] = {
 					.id = &w->rbo,
 					.type = GFX_BUFTYPE_RENDER,
-					.render = {
+					.s_render = {
 						.attachment = GFX_RENDERATTACH_DEPTH_STENCIL,
 						.size = resolution,
 						.format = GFX_RENDERFMT_DEPTH24_STENCIL8,
@@ -184,15 +184,15 @@ void	window_init(window_t *w, v2i window_size, v2i resolution, u32 buffers)
 	glBindFramebuffer(GFX_BUFTYPE_FRAME, 0);
 }
 
-void	window_update(window_t *w, col bg_col)
+void	window_update(t_window *w, col bg_col)
 {
 	_window_set_viewport(w->fbo, w->resolution);
 
 	glClearColor(bg_col.r, bg_col.g, bg_col.b, bg_col.a);
-	glClear(w->buffers);
+	glClear(w->s_buffers);
 }
 
-void	window_commit(window_t *w, col bg_window_col)
+void	window_commit(t_window *w, col bg_window_col)
 {
 	_window_set_viewport(0, w->window_size);
 	
@@ -200,11 +200,11 @@ void	window_commit(window_t *w, col bg_window_col)
 	glClear(WINDOW_BUF_COLOR);
 
 	gfx_bind(
-		&(gfx_t){
-			.shader = { .id = &w->shdr, },
-			.pipeline = { .id = &w->pipeline },
-			.texture = { .id = &w->tex },
-			.buffers[0] = { .id = &w->ibuf, .type = GFX_BUFTYPE_INDEX },
+		&(t_gfx){
+			.s_shader = { .id = &w->shdr, },
+			.s_pipeline = { .id = &w->s_pipeline },
+			.s_texture = { .id = &w->tex },
+			.s_buffers[0] = { .id = &w->ibuf, .type = GFX_BUFTYPE_INDEX },
 		});
 		
 	const m4 
@@ -217,8 +217,8 @@ void	window_commit(window_t *w, col bg_window_col)
 	memcpy(params.proj, &ortho, sizeof(ortho));
 
 	gfx_append(
-		&(gfx_t){
-			.buffers[0] = {
+		&(t_gfx){
+			.s_buffers[0] = {
 				.id = &w->ufo,
 				.type = GFX_BUFTYPE_UNIFORM,
 				.data = &params,
@@ -227,8 +227,8 @@ void	window_commit(window_t *w, col bg_window_col)
 		});
 
 	gfx_render(
-		&(gfx_t){
-			.render = {
+		&(t_gfx){
+			.s_render = {
 				.offset = 0,
 				.count = 1,
 				.indice_count = 6,
@@ -238,18 +238,18 @@ void	window_commit(window_t *w, col bg_window_col)
 		});
 }
 
-void	window_destroy(window_t *w)
+void	window_destroy(t_window *w)
 {
 	gfx_delete(
-		&(gfx_t){
-			.texture = { .id = &w->tex },
-			.buffers[0] = { .id = &w->fbo, .type = GFX_BUFTYPE_FRAME },
-			.buffers[1] = { .id = &w->rbo, .type = GFX_BUFTYPE_RENDER },
-			.buffers[2] = { .id = &w->vbuf, .type = GFX_BUFTYPE_VERTEX },
-			.buffers[3] = { .id = &w->ibuf, .type = GFX_BUFTYPE_INDEX },
-			.buffers[4] = { .id = &w->ufo, .type = GFX_BUFTYPE_UNIFORM },
-			.shader = { .id = &w->shdr },
-			.pipeline = { .id = &w->pipeline },
+		&(t_gfx){
+			.s_texture = { .id = &w->tex },
+			.s_buffers[0] = { .id = &w->fbo, .type = GFX_BUFTYPE_FRAME },
+			.s_buffers[1] = { .id = &w->rbo, .type = GFX_BUFTYPE_RENDER },
+			.s_buffers[2] = { .id = &w->vbuf, .type = GFX_BUFTYPE_VERTEX },
+			.s_buffers[3] = { .id = &w->ibuf, .type = GFX_BUFTYPE_INDEX },
+			.s_buffers[4] = { .id = &w->ufo, .type = GFX_BUFTYPE_UNIFORM },
+			.s_shader = { .id = &w->shdr },
+			.s_pipeline = { .id = &w->s_pipeline },
 		});
 }
 

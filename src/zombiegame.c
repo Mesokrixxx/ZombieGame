@@ -3,8 +3,6 @@
 #endif
 
 #define UTIL_IMPL
-#define SOKOL_IMPL
-#define SOKOL_GLCORE33
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
@@ -20,20 +18,40 @@
 #define WINDOW_RES_X 320
 #define WINDOW_RES_Y 180
 
+#define DEFAULT_TPS 60
+#define DEFAULT_FPS 60
+
 typedef struct s_zombiegame {
 	SDL_Window		*sdlwindow;
 	SDL_GLContext	context;
-	input_t			input;
-	sprite_atlas_t	font_atlas;
+	t_input			input;
+	t_sprite_atlas	font_atlas;
+	t_sprite_batch	font_batch;
 	m4				proj;
 	m4				view;
-	window_t		window;
+	t_window		window;
+
+	struct {
+		i32	TPS, FPS;
+		f32	Tdt, Fdt;
+		
+		f32	last_s, last_f, now, dt, accumulator;
+		i32	tcount;
+	}				s_time;
+
 	bool			running;
 }	t_zombiegame;
+
+void	setFPS(t_zombiegame *game, i32 FPS);
+void	setTPS(t_zombiegame *game, i32 TPS);
+void	update(t_zombiegame *game);
+void	tick(t_zombiegame *game);
+void	render(t_zombiegame *game);
 
 int main() {
 	t_zombiegame game;
 
+	game = (t_zombiegame){0};
 	ASSERT(!SDL_Init(SDL_INIT_VIDEO),
 		"Failed to init SDL: %s", SDL_GetError());
 
@@ -91,54 +109,42 @@ int main() {
 	input_init(&game.input);
 	sprite_init();
 	sprite_atlas_init(&game.font_atlas, "res/sprites/font.png", v2i_of(8));
-
-	sprite_batch_t font_batch;
-	sprite_batch_init(&font_batch, &game.font_atlas);
+	sprite_batch_init(&game.font_batch, &game.font_atlas);
 
 	game.proj = m4_ortho(0, WINDOW_RES_X, WINDOW_RES_Y, 0, 1, -1);
 	game.view = m4_identity();
 
+	setFPS(&game, 240);
+	setTPS(&game, 60);
+
 	game.running = true;
 	while (game.running)
 	{
-		SDL_Event ev;
-
-		static u64 last, dt;
-		u64	now = time_ns();
-		dt = now - last;
-		last = now;
-
-		window_update(&game.window, col_of());
-		input_update(&game.input, now);
-
-		while (SDL_PollEvent(&ev)) {
-			switch (ev.type) {
-				case (SDL_QUIT):
-					game.running = false;
-					break;
-				default:
-					input_process(&game.input, &ev);
-					break;
-			}
+		game.s_time.now = time_s();
+		game.s_time.dt = game.s_time.now - game.s_time.last_f;
+		game.s_time.last_f = game.s_time.now;
+		
+		update(&game);
+		game.s_time.accumulator += game.s_time.dt;
+		if (game.s_time.accumulator >= game.s_time.Tdt) {
+			tick(&game);
+			game.s_time.tcount++;
+			game.s_time.accumulator -= game.s_time.Tdt;
 		}
-		
-		font_str(
-			&font_batch, 
-			"Prout\n$$$2Prout",
-			v2_of(50 + cos(time_s()) * 20, 60 + sin(time_s()) * 10),
-			col_of(255), 
-			0, 0);
-		font_draw(&font_batch, NULL, &game.view, &game.proj);
+		render(&game);
 
-		window_commit(&game.window, col_of(255));
-		
-		SDL_GL_SwapWindow(game.sdlwindow);
+		if (game.s_time.now - game.s_time.last_s >= 1) {
+			printf("FPS: %d, TPS: %d\n", time_fps(game.s_time.dt), game.s_time.tcount);
+			game.s_time.tcount = 0;
+			game.s_time.last_s = game.s_time.now;
+		}
+		time_cap(game.s_time.Fdt, game.s_time.now);
 	}
 
-	sprite_batch_destroy(&font_batch);
+	sprite_batch_destroy(&game.font_batch);
 	sprite_atlas_destroy(&game.font_atlas);
 	sprite_end();
-	
+
 	input_destroy(&game.input);
 	window_destroy(&game.window);
 
@@ -147,4 +153,62 @@ int main() {
 	SDL_Quit();
 
 	debug_print_alloc_stats();
+}
+
+void	setFPS(t_zombiegame *game, i32 FPS)
+{
+	if (game->s_time.FPS == FPS)
+		return ;
+
+	game->s_time.FPS = FPS;
+	game->s_time.Fdt = 
+		game->s_time.FPS > 0 ? (1.0 / game->s_time.FPS) : 0;
+}
+
+void	setTPS(t_zombiegame *game, i32 TPS)
+{
+	if (game->s_time.TPS == TPS)
+		return ;
+
+	game->s_time.TPS = TPS;
+	game->s_time.Tdt = 
+		1.0 / (game->s_time.TPS > 0 ? game->s_time.TPS : 1);
+}
+
+void	update(t_zombiegame *game)
+{
+	window_update(&game->window, col_of());
+	input_update(&game->input, game->s_time.now);
+
+	SDL_Event ev;
+	while (SDL_PollEvent(&ev)) {
+		switch (ev.type) {
+			case (SDL_QUIT):
+				game->running = false;
+				break;
+			default:
+				input_process(&game->input, &ev);
+				break;
+		}
+	}
+}
+
+void	tick(t_zombiegame *game)
+{
+	
+}
+
+void	render(t_zombiegame *game)
+{
+	font_str(
+		&game->font_batch,
+		"Prout\nPro$2ut",
+		v2_of(50), 
+		col_of(255), 
+		0, 
+		SPRITE_NO_FLAGS);
+	font_draw(&game->font_batch, NULL, &game->view, &game->proj);
+
+	window_commit(&game->window, col_of(255));
+	SDL_GL_SwapWindow(game->sdlwindow);
 }
