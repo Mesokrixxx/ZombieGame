@@ -184,6 +184,7 @@ void APIENTRY gfx_glcallback(GLenum source,
 #include "assert.h"
 #include "file.h"
 #include "debug.h"
+#include "sparseset.h"
 
 static void	_gfx_image_load(gfx_t *gfx)
 {
@@ -349,33 +350,60 @@ static void	_gfx_buffer_destroy(gfx_t *gfx)
 		};
 }
 
+static u32	_gfx_bufferbind_gettypeid(u32 type)
+{
+	switch (type) {
+		case (GFX_BUFTYPE_VERTEX):
+			return 0;
+		case (GFX_BUFTYPE_UNIFORM):
+			return 1;
+		case (GFX_BUFTYPE_INDEX):
+			return 2;
+		case (GFX_BUFTYPE_FRAME):
+			return 3;
+		case (GFX_BUFTYPE_RENDER):
+			return 4;
+		default:
+			ASSERT(false, "Buf type undefined");
+	}
+}
+
 static void	_gfx_buffer_bind(gfx_t *gfx)
 {
-	static struct {
-		u32	type;
-		u32	last_id;
-	}	buffers[GFX_BUFFTYPE_MAXCOUNT];
+	static sparseset_t	buff_ss;
+	static i32			sparse[GFX_BUFF_MAXCOUNT];
+	static i32			dense[GFX_BUFF_MAXCOUNT];
+	static u32			data[GFX_BUFF_MAXCOUNT];
 
-	i32	i = 0;
-	while (i < GFX_BUFFTYPE_MAXCOUNT) {
-		if (!buffers[i].type || buffers[i].type == gfx->buffers[0].type) {
-			buffers[i].type = gfx->buffers[0].type;
-			if (buffers[i].last_id != *gfx->buffers[0].id) {
-				buffers[i].last_id = *gfx->buffers[0].id;
-				switch (buffers[i].type) {
-					case (GFX_BUFTYPE_FRAME):
-						glBindFramebuffer(buffers[i].type, buffers[i].last_id);
-						break ;
-					default:
-						glBindBuffer(buffers[i].type, buffers[i].last_id);
-						break ;
-				}
-			}
-			return ;
+	if (!sparseset_valid(&buff_ss))
+		sparseset_init_manual(
+			&buff_ss,
+			sizeof(u32), GFX_BUFF_MAXCOUNT,
+			sparse, dense, (void*)data, false);
+	for (i32 i = 0; gfx->buffers[i].id; i++) {
+		u32	type = gfx->buffers[i].type;
+		u32	id = *gfx->buffers[i].id;
+		u32	typeid = _gfx_bufferbind_gettypeid(type);
+		u32	*stored_id = sparseset_get(&buff_ss, typeid);
+		if (!stored_id)
+			sparseset_add(&buff_ss, &id, typeid);
+		else if (*stored_id != id)
+			*stored_id = id;
+		else
+			continue ;
+			
+		switch (type) {
+			case (GFX_BUFTYPE_FRAME):
+				glBindFramebuffer(type, id);
+				break ;
+			case (GFX_BUFTYPE_RENDER):
+				glBindRenderbuffer(type, id);
+				break ;
+			default:
+				glBindBuffer(type, id);
+				break ;
 		}
-		i++;
 	}
-	ASSERT(false, "Exceeded buff type");
 }
 
 static void	_gfx_buffer_append(gfx_t *gfx) {

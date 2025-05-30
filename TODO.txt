@@ -10,7 +10,7 @@ Explore:
 	(zombiegame.c) glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	(zombiegame.c) glDebugMessageCallback(gfx_glcallback, NULL);
 	(zombiegame.c) glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-
+	(gfx.h) Alternative to _gfx_bufferbind_gettypeid()
 
 Check/Research/Validate:
 	(gfx.h) GFX_BUFF_MAXCOUNT
@@ -27,6 +27,7 @@ Implements/Complete:
 	(window.h) all window related things in here
 	(Makefile) MacOS compilation
 	(font.c) Colored font
+	(gfx.h) boolean auto-shrink (?)
 
 Fix:
 	(input.h) Press and released on the same key

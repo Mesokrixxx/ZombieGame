@@ -11,9 +11,12 @@ typedef struct sparseset_s {
 	i32		capacity;
 	i32		sparse_size;
 	usize	data_size;
+	bool	auto_resize;
+	bool	initialized;
 }	sparseset_t;
 
-void	sparseset_init(sparseset_t *ss, usize data_size, i32 capacity);
+void	_sparseset_init(sparseset_t *ss, usize data_size, i32 capacity, bool auto_resize);
+void	_sparseset_init_manual(sparseset_t *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize);
 void	_sparseset_add(sparseset_t *ss, void *data, i32 id);
 void	*_sparseset_get(sparseset_t *ss, i32 id);
 void	sparseset_remove(sparseset_t *ss, i32 id);
@@ -53,6 +56,10 @@ static inline void	sparseset_reset(sparseset_t *ss) {
 	ss->count = 0;
 }
 
+static inline bool	sparseset_valid(sparseset_t *ss) {
+	return (ss->initialized);
+}
+
 #define _SSADD3(ss_ptr, data, id) _sparseset_add(ss_ptr, data, id)
 #define _SSADD2(ss_ptr, data) _sparseset_add(ss_ptr, data, (ss_ptr)->count)
 #define sparseset_add(...) MKMACRO(_SSADD, __VA_ARGS__)
@@ -70,11 +77,38 @@ static inline void	sparseset_reset(sparseset_t *ss) {
 		}										\
 	} while (0)
 
+#define _SSINIT4(ss_ptr, dsize, cap, autoresize) _sparseset_init(ss_ptr, dsize, cap, autoresize);
+#define _SSINIT3(ss_ptr, dsize, cap) _sparseset_init(ss_ptr, dsize, cap, true);
+#define sparseset_init(...) MKMACRO(_SSINIT, __VA_ARGS__)
+
+#define _SSINITM7(ss_ptr, dsize, cap, sparse_ptr, dense_ptr, data_ptr, autoresize) \
+	_sparseset_init_manual(ss_ptr, dsize, cap, sparse_ptr, dense_ptr, data_ptr, autoresize);
+#define _SSINITM6(ss_ptr, dsize, cap, sparse_ptr, dense_ptr, data_ptr) \
+	_sparseset_init_manual(ss_ptr, dsize, cap, sparse_ptr, dense_ptr, data_ptr, true);
+#define sparseset_init_manual(...) MKMACRO(_SSINITM, __VA_ARGS__)
+
 #ifdef UTIL_IMPL
 
 #include "debug.h"
 
-void	sparseset_init(sparseset_t *ss, usize data_size, i32 capacity)
+void	_sparseset_init_manual(sparseset_t *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize)
+{
+	*ss = (sparseset_t){0};
+
+	ss->capacity = cap;
+	ss->sparse_size = cap;
+	ss->data_size = cap;
+	ss->auto_resize = auto_resize;
+
+	ss->dense = dense;
+	ss->sparse = sparse;
+	ss->data = data;
+	memset(ss->sparse, -1, ss->sparse_size * sizeof(i32));
+
+	ss->initialized = true;
+}
+
+void	_sparseset_init(sparseset_t *ss, usize data_size, i32 capacity, bool auto_resize)
 {
 	*ss = (sparseset_t){0};
 
@@ -84,12 +118,14 @@ void	sparseset_init(sparseset_t *ss, usize data_size, i32 capacity)
 	ss->capacity = capacity;
 	ss->sparse_size = capacity;
 	ss->data_size = data_size;
+	ss->auto_resize = auto_resize;
 
-	ss->count = 0;
 	ss->dense = _malloc(ss->capacity * sizeof(i32));
 	ss->data = _malloc(ss->capacity * ss->data_size);
 	ss->sparse = _malloc(ss->sparse_size * sizeof(i32));
 	memset(ss->sparse, -1, ss->sparse_size * sizeof(i32));
+
+	ss->initialized = true;
 }
 
 void	_sparseset_add(sparseset_t *ss, void *data, i32 id)
@@ -98,6 +134,8 @@ void	_sparseset_add(sparseset_t *ss, void *data, i32 id)
 
 	if (id >= ss->sparse_size)
 	{
+		ASSERT(ss->auto_resize, "Reach max cap for sparseset, enable auto resize or change max cap");
+
 		i32 new_sparse_size = ss->sparse_size * 2;
 
 		if (id >= new_sparse_size)
@@ -111,6 +149,8 @@ void	_sparseset_add(sparseset_t *ss, void *data, i32 id)
 
 	if (ss->count >= ss->capacity)
 	{
+		ASSERT(ss->auto_resize, "Reach max cap for sparseset, enable auto resize or change max cap");
+
 		i32 new_capacity = ss->capacity * 2;
 
 		ss->dense = _realloc(ss->dense, ss->capacity * sizeof(i32), new_capacity * sizeof(i32));

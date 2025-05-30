@@ -134,10 +134,11 @@ int main() {
 		
 		SDL_GL_SwapWindow(game.sdlwindow);
 	}
-	sprite_batch_destroy(&font_batch);
 
+	sprite_batch_destroy(&font_batch);
 	sprite_atlas_destroy(&game.font_atlas);
 	sprite_end();
+	
 	input_destroy(&game.input);
 	window_destroy(&game.window);
 
