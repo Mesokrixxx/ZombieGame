@@ -50,8 +50,13 @@ void	font_str(t_sprite_batch *batch, char *str, v2 pos, col ocolor, f32 z, i32 f
 	for (i32 i = 0; str[i]; i++) {
 		if (str[i] == '\n')
 			npos = v2_of(pos.x, npos.y += 8);
+		if (str[i] >= 0 && str[i] <= 31)
+			continue ;
 		else if (str[i] == ' ')
+		{
 			npos.x += 8;
+			continue ;
+		}
 		else if (str[i] == '$')
 		{
 			i++;

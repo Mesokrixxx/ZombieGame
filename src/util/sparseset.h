@@ -18,7 +18,8 @@ typedef struct s_sparseset {
 void	_sparseset_init(t_sparseset *ss, usize data_size, i32 capacity, bool auto_resize);
 void	_sparseset_init_manual(t_sparseset *ss, usize data_size, i32 cap, i32 *sparse, i32 *dense, void *data, bool auto_resize);
 void	_sparseset_add(t_sparseset *ss, void *data, i32 id);
-void	*_sparseset_get(t_sparseset *ss, i32 id);
+void	*sparseset_get(t_sparseset *ss, i32 id);
+void	*sparseset_get_idx(t_sparseset *ss, i32 idx);
 void	sparseset_remove(t_sparseset *ss, i32 id);
 void	sparseset_destroy(t_sparseset *ss);
 
@@ -63,10 +64,6 @@ static inline bool	sparseset_valid(t_sparseset *ss) {
 #define _SSADD3(ss_ptr, data, id) _sparseset_add(ss_ptr, data, id)
 #define _SSADD2(ss_ptr, data) _sparseset_add(ss_ptr, data, (ss_ptr)->count)
 #define sparseset_add(...) MKMACRO(_SSADD, __VA_ARGS__)
-
-#define _SSGET3(ss_ptr, id, t) (t)_sparseset_get(ss_ptr, id)
-#define _SSGET2(ss_ptr, id) _sparseset_get(ss_ptr, id)
-#define sparseset_get(...) MKMACRO(_SSGET, __VA_ARGS__)
 
 #define sparseset_each(ss_ptr, ...)				\
 	do {										\
@@ -160,15 +157,23 @@ void	_sparseset_add(t_sparseset *ss, void *data, i32 id)
 
 	ss->sparse[id] = ss->count;
 	ss->dense[ss->count] = id;
-	memcpy((char*)ss->data + ss->count * ss->data_size, data, ss->data_size);
+	if (data)
+		memcpy((char*)ss->data + ss->count * ss->data_size, data, ss->data_size);
+	else
+		memset((char*)ss->data + ss->count * ss->data_size, 0, ss->data_size);
 	ss->count++;
 }
 
-void	*_sparseset_get(t_sparseset *ss, i32 id)
+void	*sparseset_get(t_sparseset *ss, i32 id)
 {
 	if (sparseset_contains(ss, id))
 		return ((char*)ss->data + ss->sparse[id] * ss->data_size);
 	return (NULL);
+}
+
+void	*sparseset_get_idx(t_sparseset *ss, i32 idx)
+{
+	return (sparseset_get(ss, sparseset_id(ss, idx)));
 }
 
 void	sparseset_remove(t_sparseset *ss, i32 id)

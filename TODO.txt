@@ -11,6 +11,7 @@ Explore:
 	(zombiegame.c) glDebugMessageCallback(gfx_glcallback, NULL);
 	(zombiegame.c) glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 	(gfx.h) Alternative to _gfx_bufferbind_gettypeid()
+	(ecs.h) Very limited ig (Hardcoded pretty much)
 
 Check/Research/Validate:
 	(gfx.h) GFX_BUFF_MAXCOUNT
@@ -34,4 +35,5 @@ Fix:
 
 Change:
 	(gfx_.h) Code is horrible istg
-	
+	(Everything) Code isn't pretty 
+	(ecs.h) All the typedefs 
